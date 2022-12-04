@@ -1,0 +1,719 @@
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/vozoid/ui-libraries/main/drawing/void/source.lua"))()
+
+local watermark = library:Watermark("skeet skeet | privet | v1 | dev")
+-- watermark:Set("Watermark Set")
+-- watermark:Hide() -- toggles watermark
+
+local main = library:Load{
+    Name = "skeet skeet",
+    SizeX = 600,
+    SizeY = 650,
+    Theme = "Midnight",
+    Extension = "json", -- config file extension
+    Folder = "skeet" -- config folder name
+}
+
+-- library.Extension = "txt" (config file extension)
+-- library.Folder = "config folder name"
+
+local tab = main:Tab("Aim")
+local section = tab:Section{
+    Name = "Legit",
+    Side = "Left"
+}
+
+local label = section:Label("Some stuff might not work!!")
+section:Button{
+    Name = "Silent aim",
+    Callback  = function()
+    
+local players = game:GetService("Players");
+local localplayer = players.LocalPlayer;
+local camera = workspace.CurrentCamera;
+local shared = getrenv().shared;
+
+-- modules
+local physics = shared.require("physics");
+local particle = shared.require("particle");
+local replication = shared.require("ReplicationInterface");
+local solve = debug.getupvalue(physics.timehit, 2);
+
+-- functions
+local function isVisible(position, ignore)
+    return #camera:GetPartsObscuringTarget({ position }, ignore) == 0;
+end
+
+local function getClosest(dir, origin, ignore)
+    local _angle = fov or 50;
+    local _position, _entry;
+
+    replication.operateOnAllEntries(function(player, entry)
+        local tpObject = entry and entry._thirdPersonObject;
+        local character = tpObject and tpObject._character;
+        if character and player.Team ~= localplayer.Team then
+            local position = character[targetedPart == "Random" and
+                (math.random() < (headChance or 0.5) and "Head" or "Torso") or
+                (targetedPart or "Torso")].Position;
+
+            if not (visibleCheck and not isVisible(position, ignore)) then
+                local dot = dir.Unit:Dot((position - origin).Unit);
+                local angle = 180 - (dot + 1) * 90;
+                if angle < _angle then
+                    _angle = angle;
+                    _position = position;
+                    _entry = entry;
+                end
+            end
+        end
+    end);
+
+    return _position, _entry;
+end
+
+local function trajectory(dir, velocity, accel, speed)
+    local t1, t2, t3, t4 = solve(
+        accel:Dot(accel) * 0.25,
+        accel:Dot(velocity),
+        accel:Dot(dir) + velocity:Dot(velocity) - speed^2,
+        dir:Dot(velocity) * 2,
+        dir:Dot(dir));
+
+    local time = (t1>0 and t1) or (t2>0 and t2) or (t3>0 and t3) or t4;
+    local bullet = 0.5*accel*time + dir/time + velocity;
+    return bullet, time;
+end
+
+-- hooks
+local old;
+old = hookfunction(particle.new, function(args)
+    if debug.info(2, "n") == "fireRound" then
+        local position, entry = getClosest(args.velocity, args.visualorigin, args.physicsignore);
+        if position and entry then
+            local index = table.find(debug.getstack(2), args.velocity);
+
+            args.velocity = trajectory(
+                position - args.visualorigin,
+                entry._velspring._p0,
+                -args.acceleration,
+                args.velocity.Magnitude);
+
+            debug.setstack(2, index, args.velocity);
+        end
+    end
+    return old(args);
+end);
+    end
+}
+
+
+
+local tab = main:Tab("Visuals")
+
+local section = tab:Section{
+    Name = "Esp",
+    Side = "Left"
+}
+
+local label = section:Label("Label")
+
+--label:Set("Label Set")
+
+local seperator = section:Separator("Separator")
+--separator:Set("Separator Set")
+
+local toggle = section:Toggle{
+    Name = "Esp",
+    Flag = "Toggle 1",
+    --Default = true,
+    Callback  = function(bool)
+        local players = game:GetService("Players")
+        local run_service = game:GetService("RunService")
+        
+        local local_player = players.LocalPlayer
+        
+        local game_client = {}
+        
+        do
+            for i,v in next, getgc(true) do
+                if typeof(v) == "table" then
+                    if rawget(v, "updateReplication") then
+                        game_client.replication_object = v
+                    elseif rawget(v, 'setHighMs') then
+                        game_client.replication_interface = v
+                    end
+                end
+            end
+        end
+        
+        local cheat_client = {
+            connections = {},
+            drawings = {},
+        }
+        
+        local function create_drawing(class, properties)
+            local drawing = Drawing.new(class)
+            for i,v in next, properties do
+                drawing[i] = v
+            end
+            table.insert(cheat_client.drawings, drawing)
+            return drawing
+        end
+        
+        local function create_conection(signal, callback)
+            local connection = signal:Connect(callback)
+            table.insert(cheat_client.connections, connection)
+            return connection
+        end
+        
+        do -- ESP
+            function cheat_client:calculate_player_bounding_box(character) -- BBOT Bounding Box Function my old one was blurry
+                local cam = workspace.CurrentCamera.CFrame
+                local torso = character.PrimaryPart.CFrame
+                local head = character.Head.CFrame
+                local top, top_isrendered = workspace.CurrentCamera:WorldToViewportPoint(head.Position + (torso.UpVector * 1) + cam.UpVector)
+                local bottom, bottom_isrendered = workspace.CurrentCamera:WorldToViewportPoint(torso.Position - (torso.UpVector * 2.5) - cam.UpVector)
+        
+                local minY = math.abs(bottom.y - top.y)
+                local sizeX = math.ceil(math.max(math.clamp(math.abs(bottom.x - top.x) * 2.5, 0, minY), minY / 2, 3))
+                local sizeY = math.ceil(math.max(minY, sizeX * 0.5, 3))
+        
+                if top_isrendered or bottom_isrendered then
+                    local boxtop = Vector2.new(math.floor(top.x * 0.5 + bottom.x * 0.5 - sizeX * 0.5), math.floor(math.min(top.y, bottom.y)))
+                    local boxsize = Vector2.new(sizeX, sizeY)
+                    return boxtop, boxsize 
+                end
+            end
+        
+            function cheat_client:get_character(player)
+                local entry = game_client.replication_interface.getEntry(player)
+        
+                if entry then
+                    local third_person_object = entry._thirdPersonObject
+                    if third_person_object then
+                        return third_person_object._character
+                    end
+                end
+            end
+        
+            function cheat_client:get_health(player)
+                local entry = game_client.replication_interface.getEntry(player)
+        
+                if entry then
+                    return entry._healthstate.health0, entry._healthstate.maxhealth
+                end
+            end
+        
+            function cheat_client:get_alive(player)
+                local entry = game_client.replication_interface.getEntry(player)
+        
+                if entry then
+                    return entry._alive
+                end
+            end
+        
+            function cheat_client:get_weapon(player)
+                local entry = game_client.replication_interface.getEntry(player)
+        
+                if entry then
+                    local third_person_object = entry._thirdPersonObject
+                    if third_person_object then
+                        return third_person_object._weaponname or ""
+                    end
+                end
+            end
+        
+            function cheat_client:add_player_esp(player)
+                local esp = {
+                    drawings = {},
+                    low_health = Color3.fromRGB(255,0,0),
+                }
+        
+                do -- Create Drawings
+                    esp.drawings.name = create_drawing("Text", {
+                        Text = player.Name,
+                        Font = 2,
+                        Size = 13,
+                        Center = true,
+                        Outline = true,
+                        Color = Color3.fromRGB(255,255,255),
+                        ZIndex = -10
+                    })
+        
+                    esp.drawings.weapon = create_drawing("Text", {
+                        Text = "",
+                        Font = 2,
+                        Size = 13,
+                        Center = true,
+                        Outline = true,
+                        Color = Color3.fromRGB(255,255,255),
+                        ZIndex = -10
+                    })
+        
+                    esp.drawings.box = create_drawing("Square", {
+                        Color = Color3.fromRGB(255,10,10),
+                        Thickness = 1,
+                        ZIndex = -9
+                    })
+        
+                    esp.drawings.box_outline = create_drawing("Square", {   
+                        Thickness = 3,
+                        Color = Color3.fromRGB(0,0,0),
+                        ZIndex = -10,
+                    })
+        
+                    esp.drawings.health = create_drawing("Line", {
+                        Thickness = 2,           
+                        Color = Color3.fromRGB(0, 255, 0),
+                        ZIndex = -9
+                    })
+        
+                    esp.drawings.health_outline = create_drawing("Line", {
+                        Thickness = 5,           
+                        Color = Color3.fromRGB(0, 0, 0),
+                        ZIndex = -10
+                    })
+        
+                    esp.drawings.health_text = create_drawing("Text", {
+                        Text = "100",
+                        Font = 2,
+                        Size = 13,
+                        Outline = true,
+                        Color = Color3.fromRGB(255, 255, 255),
+                        ZIndex = -10
+                    })
+                end
+        
+                function esp:destruct()
+                    esp.update_connection:Disconnect() -- Disconnect before deleting drawings so that the drawings don't cause an index error
+                    for _,v in next, esp.drawings do
+                        v:Remove()
+                    end
+                end
+        
+                esp.update_connection = create_conection(run_service.RenderStepped, function()
+                    if player.Parent ~= nil then  
+                        local character = cheat_client:get_character(player)
+                        local alive = cheat_client:get_alive(player)
+                        local health, max_health = cheat_client:get_health(player)
+                        local team = player.Team
+                        if character and alive and team ~= local_player.Team then
+                            local _, on_screen = workspace.CurrentCamera:WorldToViewportPoint(character.Torso.Position)
+                            if on_screen then
+                                local screen_position, screen_size = cheat_client:calculate_player_bounding_box(character)
+                                if screen_position and screen_size then
+                                    do -- Box
+                                        esp.drawings.box.Position = screen_position
+                                        esp.drawings.box.Size = Vector2.new(screen_size.X + 2, screen_size.Y + 2)
+                                        
+                                        esp.drawings.box_outline.Position = esp.drawings.box.Position
+                                        esp.drawings.box_outline.Size = esp.drawings.box.Size
+        
+                                        esp.drawings.box.Visible = true
+                                        esp.drawings.box_outline.Visible = true
+                                    end
+        
+                                    do -- Name
+                                        esp.drawings.name.Text = player.Name
+                                        esp.drawings.name.Position = esp.drawings.box.Position + Vector2.new(screen_size.X/2, -esp.drawings.name.TextBounds.Y)
+        
+                                        esp.drawings.name.Visible = true
+                                    end
+        
+                                    do -- Health
+                                        esp.drawings.health.From = Vector2.new((screen_position.X - 5), screen_position.Y + screen_size.Y)
+                                        esp.drawings.health.To = Vector2.new(esp.drawings.health.From.X, esp.drawings.health.From.Y - (health / max_health) * screen_size.Y)
+                                        esp.drawings.health.Color = esp.low_health:Lerp(Color3.fromRGB(0,255,0), health / max_health)
+        
+                                        esp.drawings.health_outline.From = esp.drawings.health.From + Vector2.new(0, 1)
+                                        esp.drawings.health_outline.To = Vector2.new(esp.drawings.health_outline.From.X, screen_position.Y - 1)
+                        
+                                        esp.drawings.health_text.Text = tostring(math.floor(health))
+                                        esp.drawings.health_text.Position = esp.drawings.health.To - Vector2.new((esp.drawings.health_text.TextBounds.X + 4), 0)
+        
+                                        esp.drawings.health.Visible = true
+                                        esp.drawings.health_outline.Visible = true
+                                        esp.drawings.health_text.Visible = true
+                                    end
+        
+                                    do -- Weapon
+                                        local tool = cheat_client:get_weapon(player)
+                                        
+                                        esp.drawings.weapon.Text = tool
+                                        esp.drawings.weapon.Position = esp.drawings.box.Position + Vector2.new(0,esp.drawings.box.Size.Y) + Vector2.new(screen_size.X/2,0)
+                                    
+                                        esp.drawings.weapon.Visible = true
+                                    end
+                                else
+                                    for _,v in next, esp.drawings do
+                                        v.Visible = false
+                                    end
+                                end
+                            else
+                                for _,v in next, esp.drawings do
+                                    v.Visible = false
+                                end
+                            end
+                        else
+                            for _,v in next, esp.drawings do
+                                v.Visible = false
+                            end
+                        end
+                    else
+                        esp:destruct()
+                    end
+                end)
+        
+                return esp
+            end
+        end
+        
+        for _,v in next, players:GetPlayers() do
+            if v ~= local_player then
+                cheat_client:add_player_esp(v)
+            end
+        end
+        
+        create_conection(players.PlayerAdded, function(player)
+            cheat_client:add_player_esp(player)
+        end)  
+    end
+}
+
+
+
+
+--toggle:Toggle(true)
+
+local toggle2 = section:Toggle{
+    Name = "Chams",
+    Flag = "Toggle 2",
+    --Default = true,
+    Callback  = function(bool)
+     -- Settings --
+
+local settings = {
+   
+    fillcolor = Color3.fromRGB(93, 63, 211);
+    filltransparency = .75;
+    
+    outlinecolor = Color3.fromRGB(255, 255, 255);
+    outlinetransparency = 0;
+    
+ }
+ 
+ -- Script --
+ 
+ local plr = game:service'Players'.LocalPlayer
+ local highlights = Instance.new('Folder', game:service'CoreGui')
+ 
+ local function addhighlight(object)
+    local highlight = Instance.new('Highlight', highlights)
+    highlight.Adornee = object
+    
+    highlight.FillColor = settings.fillcolor
+    highlight.FillTransparency = settings.filltransparency
+    
+    highlight.OutlineColor = settings.outlinecolor
+    highlight.OutlineTransparency = settings.outlinetransparency
+    
+    highlight.Adornee.Changed:Connect(function()
+        if not highlight.Adornee or not highlight.Adornee.Parent then
+            highlight:Destroy()    
+        end
+    end)
+    
+    return highlight
+ end
+ 
+ local function addtoplayer(object)
+    if object:IsA'Model' and object.Name == 'Player' and object.Parent.Name ~= tostring(plr.TeamColor) then
+        addhighlight(object)
+    end
+ end
+ 
+ for i,v in pairs(workspace.Players:GetDescendants()) do
+    addtoplayer(v)
+ end
+ 
+ workspace.Players.DescendantAdded:Connect(function(v)
+    addtoplayer(v)
+ end)  
+    end
+}
+
+
+
+
+--library:SaveConfig("config", true) -- universal config
+--library:SaveConfig("config") -- game specific config
+--library:DeleteConfig("config", true) -- universal config
+--library:DeleteConfig("config") -- game specific config
+--library:GetConfigs(true) -- return universal and game specific configs (table)
+--library:GetConfigs() -- return game specific configs (table)
+--library:LoadConfig("config", true) -- load universal config
+--library:LoadConfig("config") -- load game specific config
+
+local configs = main:Tab("Configuration")
+
+local themes = configs:Section{Name = "Theme", Side = "Left"}
+
+local themepickers = {}
+
+local themelist = themes:Dropdown{
+    Name = "Theme",
+    Default = library.currenttheme,
+    Content = library:GetThemes(),
+    Flag = "Theme Dropdown",
+    Callback = function(option)
+        if option then
+            library:SetTheme(option)
+
+            for option, picker in next, themepickers do
+                picker:Set(library.theme[option])
+            end
+        end
+    end
+}
+
+library:ConfigIgnore("Theme Dropdown")
+
+local namebox = themes:Box{
+    Name = "Custom Theme Name",
+    Placeholder = "Custom Theme",
+    Flag = "Custom Theme"
+}
+
+library:ConfigIgnore("Custom Theme")
+
+themes:Button{
+    Name = "Save Custom Theme",
+    Callback = function()
+        if library:SaveCustomTheme(library.flags["Custom Theme"]) then
+            themelist:Refresh(library:GetThemes())
+            themelist:Set(library.flags["Custom Theme"])
+            namebox:Set("")
+        end
+    end
+}
+
+local customtheme = configs:Section{Name = "Custom Theme", Side = "Right"}
+
+themepickers["Accent"] = customtheme:ColorPicker{
+    Name = "Accent",
+    Default = library.theme["Accent"],
+    Flag = "Accent",
+    Callback = function(color)
+        library:ChangeThemeOption("Accent", color)
+    end
+}
+
+library:ConfigIgnore("Accent")
+
+themepickers["Window Background"] = customtheme:ColorPicker{
+    Name = "Window Background",
+    Default = library.theme["Window Background"],
+    Flag = "Window Background",
+    Callback = function(color)
+        library:ChangeThemeOption("Window Background", color)
+    end
+}
+
+library:ConfigIgnore("Window Background")
+
+themepickers["Window Border"] = customtheme:ColorPicker{
+    Name = "Window Border",
+    Default = library.theme["Window Border"],
+    Flag = "Window Border",
+    Callback = function(color)
+        library:ChangeThemeOption("Window Border", color)
+    end
+}
+
+library:ConfigIgnore("Window Border")
+
+themepickers["Tab Background"] = customtheme:ColorPicker{
+    Name = "Tab Background",
+    Default = library.theme["Tab Background"],
+    Flag = "Tab Background",
+    Callback = function(color)
+        library:ChangeThemeOption("Tab Background", color)
+    end
+}
+
+library:ConfigIgnore("Tab Background")
+
+themepickers["Tab Border"] = customtheme:ColorPicker{
+    Name = "Tab Border",
+    Default = library.theme["Tab Border"],
+    Flag = "Tab Border",
+    Callback = function(color)
+        library:ChangeThemeOption("Tab Border", color)
+    end
+}
+
+library:ConfigIgnore("Tab Border")
+
+themepickers["Tab Toggle Background"] = customtheme:ColorPicker{
+    Name = "Tab Toggle Background",
+    Default = library.theme["Tab Toggle Background"],
+    Flag = "Tab Toggle Background",
+    Callback = function(color)
+        library:ChangeThemeOption("Tab Toggle Background", color)
+    end
+}
+
+library:ConfigIgnore("Tab Toggle Background")
+
+themepickers["Section Background"] = customtheme:ColorPicker{
+    Name = "Section Background",
+    Default = library.theme["Section Background"],
+    Flag = "Section Background",
+    Callback = function(color)
+        library:ChangeThemeOption("Section Background", color)
+    end
+}
+
+library:ConfigIgnore("Section Background")
+
+themepickers["Section Border"] = customtheme:ColorPicker{
+    Name = "Section Border",
+    Default = library.theme["Section Border"],
+    Flag = "Section Border",
+    Callback = function(color)
+        library:ChangeThemeOption("Section Border", color)
+    end
+}
+
+library:ConfigIgnore("Section Border")
+
+themepickers["Text"] = customtheme:ColorPicker{
+    Name = "Text",
+    Default = library.theme["Text"],
+    Flag = "Text",
+    Callback = function(color)
+        library:ChangeThemeOption("Text", color)
+    end
+}
+
+library:ConfigIgnore("Text")
+
+themepickers["Disabled Text"] = customtheme:ColorPicker{
+    Name = "Disabled Text",
+    Default = library.theme["Disabled Text"],
+    Flag = "Disabled Text",
+    Callback = function(color)
+        library:ChangeThemeOption("Disabled Text", color)
+    end
+}
+
+library:ConfigIgnore("Disabled Text")
+
+themepickers["Object Background"] = customtheme:ColorPicker{
+    Name = "Object Background",
+    Default = library.theme["Object Background"],
+    Flag = "Object Background",
+    Callback = function(color)
+        library:ChangeThemeOption("Object Background", color)
+    end
+}
+
+library:ConfigIgnore("Object Background")
+
+themepickers["Object Border"] = customtheme:ColorPicker{
+    Name = "Object Border",
+    Default = library.theme["Object Border"],
+    Flag = "Object Border",
+    Callback = function(color)
+        library:ChangeThemeOption("Object Border", color)
+    end
+}
+
+library:ConfigIgnore("Object Border")
+
+themepickers["Dropdown Option Background"] = customtheme:ColorPicker{
+    Name = "Dropdown Option Background",
+    Default = library.theme["Dropdown Option Background"],
+    Flag = "Dropdown Option Background",
+    Callback = function(color)
+        library:ChangeThemeOption("Dropdown Option Background", color)
+    end
+}
+
+library:ConfigIgnore("Dropdown Option Background")
+
+local configsection = configs:Section{Name = "Configs", Side = "Left"}
+
+local configlist = configsection:Dropdown{
+    Name = "Configs",
+    Content = library:GetConfigs(), -- GetConfigs(true) if you want universal configs
+    Flag = "Config Dropdown"
+}
+
+library:ConfigIgnore("Config Dropdown")
+
+local loadconfig = configsection:Button{
+    Name = "Load Config",
+    Callback = function()
+        library:LoadConfig(library.flags["Config Dropdown"]) -- LoadConfig(library.flags["Config Dropdown"], true)  if you want universal configs
+    end
+}
+
+local delconfig = configsection:Button{
+    Name = "Delete Config",
+    Callback = function()
+        library:DeleteConfig(library.flags["Config Dropdown"]) -- DeleteConfig(library.flags["Config Dropdown"], true)  if you want universal configs
+        configlist:Refresh(library:GetConfigs())
+    end
+}
+
+
+local configbox = configsection:Box{
+    Name = "Config Name",
+    Placeholder = "Config Name",
+    Flag = "Config Name"
+}
+
+library:ConfigIgnore("Config Name")
+
+local save = configsection:Button{
+    Name = "Save Config",
+    Callback = function()
+        library:SaveConfig(library.flags["Config Dropdown"] or library.flags["Config Name"]) -- SaveConfig(library.flags["Config Name"], true) if you want universal configs
+        configlist:Refresh(library:GetConfigs())
+    end
+}
+
+local keybindsection = configs:Section{Name = "UI Toggle Keybind", Side = "Left"}
+
+keybindsection:Keybind{
+    Name = "UI Toggle",
+    Flag = "UI Toggle",
+    Default = Enum.KeyCode.RightShift,
+    Blacklist = {Enum.UserInputType.MouseButton1, Enum.UserInputType.MouseButton2, Enum.UserInputType.MouseButton3},
+    Callback = function(_, fromsetting)
+        if not fromsetting then
+            library:Close()
+        end
+    end
+}
+
+
+local scrolling = main:Tab("Scrolling Columns")
+
+for i = 1, 20 do
+    local sec = scrolling:Section{
+        Name = tostring(math.random(2000, 20000000)),
+        Side = math.random(1, 2) == 1 and "Left" or "Right"
+    }
+
+    for i = 1, math.random(3, 10) do
+        if math.random(1, 2) == 1 then
+            sec:Label(tostring(math.random(2000, 20000000)))
+        else
+            sec:Button{Name = tostring(math.random(2000, 20000000))}
+        end
+    end
+end
+
+--library:Close()
+--library:Unload()
