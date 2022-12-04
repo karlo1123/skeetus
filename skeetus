@@ -6,9 +6,9 @@ local watermark = library:Watermark("skeet skeet | privet | v1 | dev")
 
 local main = library:Load{
     Name = "skeet skeet",
-    SizeX = 600,
-    SizeY = 650,
-    Theme = "Midnight",
+    SizeX = 500,
+    SizeY = 550,
+    Theme = "Default",
     Extension = "json", -- config file extension
     Folder = "skeet" -- config folder name
 }
