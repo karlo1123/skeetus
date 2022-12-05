@@ -8,7 +8,7 @@ local main = library:Load{
     Name = "skeet skeet",
     SizeX = 500,
     SizeY = 550,
-    Theme = "Default",
+    Theme = "Midnight",
     Extension = "json", -- config file extension
     Folder = "skeet" -- config folder name
 }
